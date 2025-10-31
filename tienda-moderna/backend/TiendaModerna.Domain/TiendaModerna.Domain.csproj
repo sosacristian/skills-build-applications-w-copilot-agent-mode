@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- 
+  Este proyecto NO debe tener dependencias externas.
+  El Domain Layer es el núcleo del negocio y debe ser completamente independiente.
+  Solo contiene:
+  - Entidades de negocio (POCOs)
+  - Interfaces de repositorios
+  - Enumeraciones
+  - Reglas de negocio
+  -->
+
+</Project>

@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OctoFit Tracker - Cliente de Prueba</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            padding-top: 20px;
+            background-color: #f0f8ff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-header {
+            background-color: #e7f1ff;
+            font-weight: bold;
+        }
+        .json-display {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .tab-content {
+            padding: 20px;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+        }
+        .nav-tabs .nav-link {
+            font-weight: 500;
+        }
+        .nav-tabs .nav-link.active {
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .btn-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        .btn-success {
+            background-color: #198754;
+            border-color: #198754;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-online {
+            background-color: #28a745;
+        }
+        .status-offline {
+            background-color: #dc3545;
+        }
+        .api-status {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        .steps-container {
+            background-color: #e7f1ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .steps-container h5 {
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-activity"></i> OctoFit Tracker
+            </a>
+            <div class="api-status">
+                Estado API: <span class="status-indicator status-offline" id="apiStatus"></span>
+                <span id="apiStatusText">Verificando...</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="steps-container">
+            <h5><i class="bi bi-info-circle"></i> Guía rápida para usar este cliente de prueba</h5>
+            <ol>
+                <li>Asegúrate de que el servidor Django esté ejecutándose en http://localhost:8000</li>
+                <li>Registra un nuevo usuario en la pestaña "Autenticación"</li>
+                <li>Inicia sesión para obtener un token JWT</li>
+                <li>Explora las diferentes pestañas para probar la funcionalidad</li>
+            </ol>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-gear"></i> Configuración de API</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="apiUrl" class="form-label">URL Base de la API</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+                        <input type="text" class="form-control" id="apiUrl" value="http://localhost:8000/api">
+                        <button class="btn btn-outline-primary" type="button" onclick="checkApiStatus()">Verificar</button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="authToken" class="form-label">Token JWT (después de iniciar sesión)</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-key"></i></span>
+                        <input type="text" class="form-control" id="authToken">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs" id="apiTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="auth-tab" data-bs-toggle="tab" data-bs-target="#auth" type="button" role="tab">
+                    <i class="bi bi-person-badge"></i> Autenticación
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">
+                    <i class="bi bi-person-circle"></i> Perfil
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="teams-tab" data-bs-toggle="tab" data-bs-target="#teams" type="button" role="tab">
+                    <i class="bi bi-people-fill"></i> Equipos
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="activities-tab" data-bs-toggle="tab" data-bs-target="#activities" type="button" role="tab">
+                    <i class="bi bi-activity"></i> Actividades
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="exercises-tab" data-bs-toggle="tab" data-bs-target="#exercises" type="button" role="tab">
+                    <i class="bi bi-lightning-charge"></i> Ejercicios
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="apiTabsContent">
+            <!-- Autenticación -->
+            <div class="tab-pane fade show active" id="auth" role="tabpanel" aria-labelledby="auth-tab">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5><i class="bi bi-person-plus"></i> Registro de Usuario</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="registerFirstName" class="form-label">Nombre</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control" id="registerFirstName" placeholder="Tu nombre" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="registerLastName" class="form-label">Apellido</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control" id="registerLastName" placeholder="Tu apellido" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerUsername" class="form-label">Usuario</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                                <input type="text" class="form-control" id="registerUsername" placeholder="Ingresa tu nombre de usuario" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerEmail" class="form-label">Email</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                <input type="email" class="form-control" id="registerEmail" placeholder="Ingresa tu correo electrónico" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerPassword" class="form-label">Contraseña</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                <input type="password" class="form-control" id="registerPassword" placeholder="Ingresa tu contraseña (mínimo 8 caracteres)" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerConfirmPassword" class="form-label">Confirmar Contraseña</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                                <input type="password" class="form-control" id="registerConfirmPassword" placeholder="Confirma tu contraseña" required>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="register()">
+                            <i class="bi bi-person-plus-fill"></i> Registrarse
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="loginUsername" class="form-label">Usuario</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" id="loginUsername" placeholder="Ingresa tu nombre de usuario">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Contraseña</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                <input type="password" class="form-control" id="loginPassword" placeholder="Ingresa tu contraseña">
+                            </div>
+                        </div>
+                        <button class="btn btn-success" onclick="login()">
+                            <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                        </button>
+                        <div class="mt-3" id="loginResult"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Perfil -->
+            <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5>Mi Perfil</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary mb-3" onclick="getUserProfile()">Obtener Perfil</button>
+                        <div id="profileData" class="json-display"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Actualizar Perfil</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="profileHeight" class="form-label">Altura (cm)</label>
+                            <input type="number" class="form-control" id="profileHeight">
+                        </div>
+                        <div class="mb-3">
+                            <label for="profileWeight" class="form-label">Peso (kg)</label>
+                            <input type="number" class="form-control" id="profileWeight">
+                        </div>
+                        <div class="mb-3">
+                            <label for="profileFitnessGoal" class="form-label">Objetivo</label>
+                            <select class="form-control" id="profileFitnessGoal">
+                                <option value="LOSE_WEIGHT">Perder peso</option>
+                                <option value="GAIN_MUSCLE">Ganar músculo</option>
+                                <option value="IMPROVE_ENDURANCE">Mejorar resistencia</option>
+                                <option value="MAINTAIN">Mantener</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="profileActivityLevel" class="form-label">Nivel de Actividad</label>
+                            <select class="form-control" id="profileActivityLevel">
+                                <option value="SEDENTARY">Sedentario</option>
+                                <option value="LIGHT">Ligero</option>
+                                <option value="MODERATE">Moderado</option>
+                                <option value="VERY_ACTIVE">Muy activo</option>
+                                <option value="EXTRA_ACTIVE">Extra activo</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-success" onclick="updateProfile()">Actualizar</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Equipos -->
+            <div class="tab-pane fade" id="teams" role="tabpanel" aria-labelledby="teams-tab">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5>Equipos Disponibles</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary mb-3" onclick="getTeams()">Obtener Equipos</button>
+                        <div id="teamsData" class="json-display"></div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5>Crear Equipo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="teamName" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="teamName">
+                        </div>
+                        <div class="mb-3">
+                            <label for="teamDescription" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="teamDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="teamPrivate">
+                            <label class="form-check-label" for="teamPrivate">Equipo Privado</label>
+                        </div>
+                        <button class="btn btn-success" onclick="createTeam()">Crear Equipo</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Unirse a Equipo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="joinTeamId" class="form-label">ID del Equipo</label>
+                            <input type="number" class="form-control" id="joinTeamId">
+                        </div>
+                        <button class="btn btn-primary" onclick="joinTeam()">Unirse</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actividades -->
+            <div class="tab-pane fade" id="activities" role="tabpanel" aria-labelledby="activities-tab">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5>Mis Actividades</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary mb-3" onclick="getActivities()">Obtener Actividades</button>
+                        <div id="activitiesData" class="json-display"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Registrar Actividad</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="activityType" class="form-label">Tipo de Ejercicio</label>
+                            <select class="form-control" id="activityType">
+                                <!-- Se llenará con getExerciseTypes() -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="activityDuration" class="form-label">Duración (minutos)</label>
+                            <input type="number" class="form-control" id="activityDuration">
+                        </div>
+                        <div class="mb-3">
+                            <label for="activityCalories" class="form-label">Calorías Quemadas</label>
+                            <input type="number" class="form-control" id="activityCalories">
+                        </div>
+                        <div class="mb-3">
+                            <label for="activityDate" class="form-label">Fecha</label>
+                            <input type="date" class="form-control" id="activityDate">
+                        </div>
+                        <div class="mb-3">
+                            <label for="activityNotes" class="form-label">Notas</label>
+                            <textarea class="form-control" id="activityNotes" rows="3"></textarea>
+                        </div>
+                        <button class="btn btn-success" onclick="registerActivity()">Registrar</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ejercicios -->
+            <div class="tab-pane fade" id="exercises" role="tabpanel" aria-labelledby="exercises-tab">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5>Tipos de Ejercicio</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary mb-3" onclick="getExerciseTypes()">Obtener Tipos</button>
+                        <div id="exerciseTypesData" class="json-display"></div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Planes de Entrenamiento</h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary mb-3" onclick="getWorkoutPlans()">Obtener Planes</button>
+                        <div id="workoutPlansData" class="json-display"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>Respuesta de la API</h5>
+            </div>
+            <div class="card-body">
+                <div id="apiResponse" class="json-display">Aquí se mostrará la respuesta de la API...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Función para obtener la URL base de la API
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value;
+        }
+        
+        // Función para obtener los headers con el token JWT
+        function getHeaders() {
+            const token = document.getElementById('authToken').value;
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            
+            return headers;
+        }
+        
+        // Función para mostrar la respuesta de la API
+        function displayResponse(data, elementId = 'apiResponse') {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+        
+        // Registro de usuario
+        async function register() {
+            const firstName = document.getElementById('registerFirstName').value;
+            const lastName = document.getElementById('registerLastName').value;
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            
+            if (!firstName || !lastName || !username || !email || !password || !confirmPassword) {
+                displayResponse({ error: 'Todos los campos son obligatorios' });
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                displayResponse({ error: 'Las contraseñas no coinciden' });
+                return;
+            }
+            
+            if (password.length < 8) {
+                displayResponse({ error: 'La contraseña debe tener al menos 8 caracteres' });
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/register/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username,
+                        email,
+                        password,
+                        password2: confirmPassword,
+                        first_name: firstName,
+                        last_name: lastName
+                    })
+                });
+                
+                const data = await response.json();
+                displayResponse(data);
+                
+                if (response.ok) {
+                    alert('Usuario registrado con éxito. Por favor inicia sesión.');
+                    // Limpiar el formulario
+                    document.getElementById('registerFirstName').value = '';
+                    document.getElementById('registerLastName').value = '';
+                    document.getElementById('registerUsername').value = '';
+                    document.getElementById('registerEmail').value = '';
+                    document.getElementById('registerPassword').value = '';
+                    document.getElementById('registerConfirmPassword').value = '';
+                    // Prellenar el login
+                    document.getElementById('loginUsername').value = username;
+                    document.getElementById('loginPassword').value = password;
+                }
+            } catch (error) {
+                displayResponse({ error: error.message });
+            }
+        }
+        
+        // Iniciar sesión
+        async function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!username || !password) {
+                displayResponse({ error: 'Usuario y contraseña son obligatorios' });
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/token/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                displayResponse(data);
+                
+                if (response.ok && data.access) {
+                    document.getElementById('authToken').value = data.access;
+                    alert('Inicio de sesión exitoso. Token JWT guardado.');
+                    // Cargar tipos de ejercicio para el selector
+                    getExerciseTypes(true);
+                }
+            } catch (error) {
+                displayResponse({ error: error.message });
+            }
+        }
+        
+        // Obtener perfil
+        async function getUserProfile() {
+            try {
+                const response = await fetch(`${getApiUrl()}/me/profile/`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+                
+                const data = await response.json();
+                displayResponse(data, 'profileData');
+                
+                // Rellenar los campos del formulario
+                if (response.ok && data.profile) {
+                    const profile = data.profile;
+                    document.getElementById('profileHeight').value = profile.height || '';
+                    document.getElementById('profileWeight').value = profile.weight || '';
+                    document.getElementById('profileFitnessGoal').value = profile.fitness_goal || 'MAINTAIN';
+                    document.getElementById('profileActivityLevel').value = profile.activity_level || 'MODERATE';
+                }
+            } catch (error) {
+                displayResponse({ error: error.message }, 'profileData');
+            }
+        }
+        
+        // Actualizar perfil
+        async function updateProfile() {
+            const height = document.getElementById('profileHeight').value;
+            const weight = document.getElementById('profileWeight').value;
+            const fitnessGoal = document.getElementById('profileFitnessGoal').value;
+            const activityLevel = document.getElementById('profileActivityLevel').value;
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/me/profile/update/`, {
+                    method: 'PUT',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        height: parseFloat(height),
+                        weight: parseFloat(weight),
+                        fitness_goal: fitnessGoal,
+                        activity_level: activityLevel
+                    })
+                });
+                
+                const data = await response.json();
+                displayResponse(data);
+                
+                if (response.ok) {
+                    alert('Perfil actualizado con éxito.');
+                    getUserProfile();
+                }
+            } catch (error) {
+                displayResponse({ error: error.message });
+            }
+        }
+        
+        // Obtener equipos
+        async function getTeams() {
+            try {
+                const response = await fetch(`${getApiUrl()}/teams/`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+                
+                const data = await response.json();
+                displayResponse(data);
+                displayResponse(data, 'teamsData');
+            } catch (error) {
+                displayResponse({ error: error.message });
+            }
+        }
+        
+        // Crear equipo
+        async function createTeam() {
+            const name = document.getElementById('teamName').value;
+            const description = document.getElementById('teamDescription').value;
+            const isPrivate = document.getElementById('teamPrivate').checked;
+            
+            if (!name) {
+                displayResponse({ error: 'El nombre del equipo es obligatorio' });
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/teams/`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        name,
+                        description,
+                        is_private: isPrivate
+                    })
+                });
+                
+                const data = await response.json();
+                displayResponse(data);
+                
+                if (response.ok) {
+                    alert('Equipo creado con éxito.');
+                    getTeams();
+                    document.getElementById('teamName').value = '';
+                    document.getElementById('teamDescription').value = '';
+                    document.getElementById('teamPrivate').checked = false;
+                }
+            } catch (error) {
+                displayResponse({ error: error.message });
+            }
+        }
+        
+        // Unirse a un equipo
+        async function joinTeam() {
+            const teamId = document.getElementById('joinTeamId').value;
+            
+            if (!teamId) {
+                displayResponse({ error: 'El ID del equipo es obligatorio' });
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/memberships/`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        team: parseInt(teamId),
+                        role: 'MEMBER'
+                    })
+                });
+                
+                const data = await response.json();
+                displayResponse(data);
+                
+                if (response.ok) {
+                    alert('Te has unido al equipo con éxito.');
+                    getTeams();
+                    document.getElementById('joinTeamId').value = '';
+                }
+            } catch (error) {
+                displayResponse({ error: error.message });
+            }
+        }
+        
+        // Obtener actividades
+        async function getActivities() {
+            try {
+                const response = await fetch(`${getApiUrl()}/activities/`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+                
+                const data = await response.json();
+                displayResponse(data);
+                displayResponse(data, 'activitiesData');
+            } catch (error) {
+                displayResponse({ error: error.message });
+            }
+        }
+        
+        // Obtener tipos de ejercicio
+        async function getExerciseTypes(forSelector = false) {
+            try {
+                const response = await fetch(`${getApiUrl()}/exercise-types/`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+                
+                const data = await response.json();
+                displayResponse(data);
+                
+                if (!forSelector) {
+                    displayResponse(data, 'exerciseTypesData');
+                }
+                
+                // Llenar el selector de tipos de ejercicio
+                if (response.ok && data.results && forSelector) {
+                    const select = document.getElementById('activityType');
+                    select.innerHTML = '';
+                    
+                    data.results.forEach(type => {
+                        const option = document.createElement('option');
+                        option.value = type.id;
+                        option.textContent = type.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                displayResponse({ error: error.message });
+            }
+        }
+        
+        // Obtener planes de entrenamiento
+        async function getWorkoutPlans() {
+            try {
+                const response = await fetch(`${getApiUrl()}/workout-plans/`, {
+                    method: 'GET',
+                    headers: getHeaders()
+                });
+                
+                const data = await response.json();
+                displayResponse(data);
+                displayResponse(data, 'workoutPlansData');
+            } catch (error) {
+                displayResponse({ error: error.message });
+            }
+        }
+        
+        // Registrar actividad
+        async function registerActivity() {
+            const exerciseTypeId = document.getElementById('activityType').value;
+            const duration = document.getElementById('activityDuration').value;
+            const calories = document.getElementById('activityCalories').value;
+            const date = document.getElementById('activityDate').value;
+            const notes = document.getElementById('activityNotes').value;
+            
+            if (!exerciseTypeId || !duration || !calories || !date) {
+                displayResponse({ error: 'Tipo de ejercicio, duración, calorías y fecha son obligatorios' });
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${getApiUrl()}/activities/`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        exercise_type: parseInt(exerciseTypeId),
+                        duration_minutes: parseInt(duration),
+                        calories_burned: parseInt(calories),
+                        date,
+                        notes
+                    })
+                });
+                
+                const data = await response.json();
+                displayResponse(data);
+                
+                if (response.ok) {
+                    alert('Actividad registrada con éxito.');
+                    getActivities();
+                    document.getElementById('activityDuration').value = '';
+                    document.getElementById('activityCalories').value = '';
+                    document.getElementById('activityDate').value = '';
+                    document.getElementById('activityNotes').value = '';
+                }
+            } catch (error) {
+                displayResponse({ error: error.message });
+            }
+        }
+        
+        // Inicializar la fecha actual en el campo de fecha
+        // Función para verificar el estado de la API
+        async function checkApiStatus() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const statusIndicator = document.getElementById('apiStatus');
+            const statusText = document.getElementById('apiStatusText');
+            
+            try {
+                const response = await fetch(`${apiUrl}/users/`);
+                
+                if (response.ok) {
+                    statusIndicator.className = 'status-indicator status-online';
+                    statusText.textContent = 'Conectado';
+                    statusText.className = 'text-success';
+                } else {
+                    statusIndicator.className = 'status-indicator status-offline';
+                    statusText.textContent = 'Error: ' + response.status;
+                    statusText.className = 'text-danger';
+                }
+            } catch (error) {
+                statusIndicator.className = 'status-indicator status-offline';
+                statusText.textContent = 'Desconectado';
+                statusText.className = 'text-danger';
+            }
+        }
+        
+        // Función mejorada para mostrar respuestas JSON
+        function displayResponse(data, targetId = 'apiResponse') {
+            const target = document.getElementById(targetId);
+            
+            if (!target) return;
+            
+            if (!data) {
+                target.innerHTML = '<div class="alert alert-info">No hay datos disponibles</div>';
+                return;
+            }
+            
+            if (data.error) {
+                target.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            
+            // Si es una lista de elementos, mostrarlos en una tabla o tarjetas
+            if (Array.isArray(data) || (data.results && Array.isArray(data.results))) {
+                const items = data.results || data;
+                
+                if (items.length === 0) {
+                    target.innerHTML = '<div class="alert alert-info">No hay elementos para mostrar</div>';
+                    return;
+                }
+                
+                // Mostrar como tabla
+                let html = '<div class="table-responsive"><table class="table table-striped table-hover">';
+                
+                // Encabezados de tabla
+                html += '<thead><tr>';
+                for (const key of Object.keys(items[0]).filter(k => k !== 'url' && k !== 'id')) {
+                    html += `<th>${key.replace(/_/g, ' ')}</th>`;
+                }
+                html += '<th>Acciones</th>';
+                html += '</tr></thead>';
+                
+                // Filas
+                html += '<tbody>';
+                for (const item of items) {
+                    html += '<tr>';
+                    for (const key of Object.keys(item).filter(k => k !== 'url' && k !== 'id')) {
+                        if (typeof item[key] === 'object' && item[key] !== null) {
+                            html += `<td>${JSON.stringify(item[key])}</td>`;
+                        } else {
+                            html += `<td>${item[key]}</td>`;
+                        }
+                    }
+                    html += `<td>
+                        <button class="btn btn-sm btn-outline-info" onclick="viewDetails(${item.id})">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </td>`;
+                    html += '</tr>';
+                }
+                html += '</tbody></table></div>';
+                
+                target.innerHTML = html;
+            } else {
+                // Mostrar como JSON formateado
+                target.innerHTML = `<pre class="json-display">${JSON.stringify(data, null, 2)}</pre>`;
+            }
+        }
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            if (document.getElementById('activityDate')) {
+                document.getElementById('activityDate').value = today;
+            }
+            
+            // Verificar estado de la API al cargar
+            checkApiStatus();
+        });
+
+        // Función para visualizar detalles
+        function viewDetails(id) {
+            alert('Esta función será implementada próximamente: Visualizar detalles del elemento #' + id);
+        }
+    </script>
+    
+    <!-- Modal de ayuda -->
+    <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="helpModalLabel">
+                        <i class="bi bi-question-circle"></i> Ayuda - Cliente de prueba OctoFit Tracker
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>¿Cómo usar este cliente de prueba?</h6>
+                    <ol>
+                        <li>Asegúrate que el servidor de Django esté ejecutándose (puerto 8000)</li>
+                        <li>En la pestaña "Autenticación", registra un nuevo usuario</li>
+                        <li>Inicia sesión para obtener tu token JWT</li>
+                        <li>Navega por las diferentes pestañas para probar la API</li>
+                    </ol>
+
+                    <h6>Problemas comunes</h6>
+                    <ul>
+                        <li><strong>Estado API: Desconectado</strong> - Verifica que el servidor Django esté corriendo</li>
+                        <li><strong>Error CORS</strong> - Asegúrate de ejecutar el cliente desde un servidor web</li>
+                        <li><strong>Token no válido</strong> - Es posible que tu sesión haya expirado, vuelve a iniciar sesión</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer mt-5 py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">OctoFit Tracker - Cliente de Prueba API</span>
+            <div class="mt-2">
+                <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#helpModal">
+                    <i class="bi bi-question-circle"></i> Ayuda
+                </button>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Scripts de Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

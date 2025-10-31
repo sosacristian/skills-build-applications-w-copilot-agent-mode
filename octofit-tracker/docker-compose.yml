@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,frontend
+      - SECRET_KEY=your-secret-key-here
+      - DB_ENGINE=django.db.backends.sqlite3
+      - DB_NAME=db.sqlite3
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://frontend:3000
+    command: sh -c "cd octofit_tracker && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=octofit
+      - POSTGRES_USER=octofit_user
+      - POSTGRES_PASSWORD=octofit_password
+    ports:
+      - "5432:5432"
+      
+  frontend:
+    image: node:16
+    volumes:
+      - ./frontend:/app
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    command: >
+      sh -c "npm install -g serve && 
+             serve -s . -l 3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

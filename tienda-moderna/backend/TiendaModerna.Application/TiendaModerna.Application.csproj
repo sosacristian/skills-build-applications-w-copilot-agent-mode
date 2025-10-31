@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- Referencias a otros proyectos -->
+  <ItemGroup>
+    <ProjectReference Include="..\TiendaModerna.Domain\TiendaModerna.Domain.csproj" />
+  </ItemGroup>
+
+  <!-- Paquetes NuGet para la capa de aplicación -->
+  <ItemGroup>
+    <!-- AutoMapper: Mapeo entre entidades y DTOs -->
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+    
+    <!-- FluentValidation: Validaciones expresivas y testeables -->
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.9.0" />
+    
+    <!-- MediatR: Patrón Mediator para CQRS (opcional) -->
+    <PackageReference Include="MediatR" Version="12.2.0" />
+    
+    <!-- BCrypt para hashing de contraseñas -->
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    
+    <!-- JWT Authentication -->
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.0.0" />
+    
+    <!-- Configuration -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

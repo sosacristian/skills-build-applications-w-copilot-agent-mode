@@ -1,0 +1,106 @@
+# Docker Compose para Tienda Moderna
+# Este archivo orquesta todos los servicios necesarios para la aplicación
+#
+# DECISIÓN ARQUITECTÓNICA: ¿Por qué Docker Compose?
+# - Facilita el desarrollo local con un comando
+# - Garantiza entorno consistente entre desarrolladores
+# - Prepara el camino hacia Kubernetes/OpenShift
+# - Aísla dependencias y configuraciones
+
+version: '3.8'
+
+services:
+  # Servicio de Base de Datos MySQL
+  # Almacena todos los datos de la aplicación
+  mysql:
+    image: mysql:8.0
+    container_name: tienda-moderna-mysql
+    restart: always
+    environment:
+      # Configuración de la base de datos
+      # NOTA: En producción, usar secrets y variables de entorno seguras
+      MYSQL_ROOT_PASSWORD: root_password_2024
+      MYSQL_DATABASE: tienda_moderna
+      MYSQL_USER: tienda_user
+      MYSQL_PASSWORD: tienda_pass_2024
+    ports:
+      - "3306:3306"
+    volumes:
+      # Persistencia de datos: los datos sobreviven al reinicio del contenedor
+      - mysql_data:/var/lib/mysql
+    networks:
+      - tienda-network
+    healthcheck:
+      # Verifica que MySQL esté listo antes de que otros servicios dependan de él
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Servicio Backend - API .NET 8
+  # Contiene toda la lógica de negocio y acceso a datos
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tienda-moderna-backend
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # Variables de entorno para la aplicación
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=tienda_moderna;User=tienda_user;Password=tienda_pass_2024;"
+      Jwt__SecretKey: "Esta_Es_Una_Clave_Secreta_Muy_Larga_Y_Segura_Para_JWT_2024"
+      Jwt__Issuer: "TiendaModerna"
+      Jwt__Audience: "TiendaModernaClients"
+      Jwt__ExpirationInMinutes: 60
+    ports:
+      - "5000:5000"
+    volumes:
+      # Volumen para subida de imágenes de productos
+      - uploads_data:/app/uploads
+    networks:
+      - tienda-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Servicio Frontend - Vue 3
+  # Interfaz de usuario para clientes y administradores
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tienda-moderna-frontend
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      # URL del backend para las llamadas API
+      VITE_API_URL: http://localhost:5000/api
+    ports:
+      - "3000:3000"
+    networks:
+      - tienda-network
+
+# Definición de volúmenes persistentes
+# Los datos en estos volúmenes persisten incluso si se eliminan los contenedores
+volumes:
+  mysql_data:
+    driver: local
+    # Almacena todos los datos de MySQL
+  uploads_data:
+    driver: local
+    # Almacena las imágenes subidas de productos
+
+# Red personalizada para la comunicación entre servicios
+# Permite que los contenedores se comuniquen usando nombres de servicio
+networks:
+  tienda-network:
+    driver: bridge
+    # Bridge: red interna aislada, ideal para desarrollo local

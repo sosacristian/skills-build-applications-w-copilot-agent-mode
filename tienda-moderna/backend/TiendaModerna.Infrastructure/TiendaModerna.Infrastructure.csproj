@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- Referencias a otros proyectos -->
+  <ItemGroup>
+    <ProjectReference Include="..\TiendaModerna.Domain\TiendaModerna.Domain.csproj" />
+    <ProjectReference Include="..\TiendaModerna.Application\TiendaModerna.Application.csproj" />
+  </ItemGroup>
+
+  <!-- Paquetes NuGet para la capa de infraestructura -->
+  <ItemGroup>
+    <!-- Entity Framework Core -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    
+    <!-- Provider MySQL (Pomelo es el más maduro y con mejor rendimiento) -->
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.0" />
+    
+    <!-- BCrypt para encriptación de contraseñas -->
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    
+    <!-- EPPlus para manejo de archivos Excel -->
+    <PackageReference Include="EPPlus" Version="7.0.0" />
+  </ItemGroup>
+
+</Project>
